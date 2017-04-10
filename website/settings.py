@@ -91,7 +91,7 @@ DATABASES = {
         'NAME': 'monitor',
         'USER':'monitor',
         'PASSWORD':'Monitor123Q',
-        'HOST':'192.168.30.128',
+        'HOST':'192.168.163.130',
         'PORT':'3306',
     }
 }

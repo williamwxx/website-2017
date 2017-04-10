@@ -21,6 +21,9 @@
 						<th>
 							主机
 						</th>
+                        <th>
+							服务
+						</th>
 						<th>
 							状态
 						</th>
@@ -33,23 +36,31 @@
 					</tr>
 				</thead>
 				<tbody>
+                 {% for foo in list %}
 					<tr class="success">
 						<td>
-							V1
+							{{ foo.host }}
 						</td>
-						<td>
-							正常
+                        	<td>
+							{{ foo.server}}
 						</td>
-						<td>
-							2017/4/7
+                        	<td>
+							{{ foo.serstatus }}
 						</td>
-						<td>
-							主机状态正常
+                        	<td>
+							{{ foo.date }}
+						</td>
+                        	<td>
+							{{ foo.decs }}
 						</td>
 					</tr>
+                  {% endfor %}
 					<tr class="warning">
 						<td>
 							V2
+						</td>
+                        <td>
+							CPU
 						</td>
 						<td>
 							异常
@@ -64,6 +75,9 @@
                     <tr class="warning">
 						<td>
 							V3
+						</td>
+                        <td>
+							CPU
 						</td>
 						<td>
                             未知
