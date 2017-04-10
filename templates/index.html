@@ -19,7 +19,7 @@
 				<thead>
 					<tr>
 						<th>
-							主机
+							URL
 						</th>
                         <th>
 							服务
@@ -51,7 +51,7 @@
 							{{ foo.date }}
 						</td>
                         	<td>
-							{{ foo.decs }}
+							{{ foo.decs|safe }}
 						</td>
 					</tr>
                   {% endfor %}
