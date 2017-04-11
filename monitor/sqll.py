@@ -1,7 +1,9 @@
 import urllib2
 import MySQLdb
-#import demjson
+import datetime
+import demjson
 
+now = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
 try:
     conn= MySQLdb.connect(
         host='192.168.30.128',
@@ -10,6 +12,7 @@ try:
         passwd='Monitor123Q',
         db ='monitor',
         )
+
     cur = conn.cursor()
     cur.execute("select url from monitor_url")
     info = cur.fetchall()
@@ -18,11 +21,13 @@ try:
         try:
             response = urllib2.urlopen(str(url),timeout = 2)
             html = response.read()
-            print html
+            sql = '''INSERT INTO monitor_json_data(url,downtime,json)VALUES('%s','%s','%s')'''%(str(url),str(now),str(html))
+            cur.execute(sql)
         except:
-            html={"status":"unknown","HOST":{"status":"unknown","host":"HOST IS ERROR"}}
-            print html
-
+           ejson={"status":"unknown","HOST":{"status":"unknown","host":"HOST IS ERROR"}}
+           html=demjson.encode(ejson)
+           sql = '''INSERT INTO monitor_json_data(url,downtime,json)VALUES('%s','%s','%s')'''%(str(url),str(now),str(html))
+           cur.execute(sql)
     cur.close()
     conn.commit()
     conn.close()
