@@ -25,7 +25,7 @@ SECRET_KEY = 'pvcn)0%ett&%xizn%y7g3e4lgixpt5fz2@gz1m+okx+7q$lvob'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['172.19.0.191']
+ALLOWED_HOSTS = ['172.19.0.191','127.0.0.1']
 
 
 # Application definition
@@ -96,6 +96,18 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'redis_cache.cache.RedisCache',
+        'LOCATION': '192.168.30.128:6379',
+        "OPTIONS": {
+            "CLIENT_CLASS": "redis_cache.client.DefaultClient",
+        },
+    },
+}
+REDIS_TIMEOUT=7*24*60*60
+CUBES_REDIS_TIMEOUT=60*60
+NEVER_REDIS_TIMEOUT=365*24*60*60
 
 
 
