@@ -22,4 +22,5 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
 #    url(r'$', index),
     url(r'^$',index,name='index'),
+    url(r'index/list/$',list,name='list'),
 ]

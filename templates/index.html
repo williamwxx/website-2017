@@ -7,6 +7,14 @@
     <script src="http://cdn.static.runoob.com/libs/bootstrap/3.3.7/css/bootstrap-theme.min.css"></script>
     <script src="http://cdn.static.runoob.com/libs/jquery/2.1.1/jquery.min.js"></script>
     <script src="http://cdn.static.runoob.com/libs/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <style type="text/css">
+        td{
+            vertical-align: middle !important;
+        }
+        th{
+            vertical-align: middle !important;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -18,77 +26,57 @@
 			<table class="table table-condensed table-bordered">
 				<thead>
 					<tr>
-						<th>
-							URL
+						<th rowspan="2">
+							系统名称
 						</th>
-                        <th>
-							服务
+                        <th rowspan="2">
+                            URL
 						</th>
-						<th>
-							状态
+                        <th rowspan="2">
+							系统状态
 						</th>
-						<th>
-							更新时间
+						<th rowspan="2">
+                            主机
 						</th>
-						<th>
-							详情
+						<th colspan="2">
+                            系统详情
 						</th>
 					</tr>
+                  <th >IP地址</th>
+                   <th>状态</th>
 				</thead>
 				<tbody>
-                 {% for foo in list %}
+                {% for foo in list %}
 					<tr class="success">
-						<td>
-							{{ foo.host }}
+						<td  rowspan="{{ foo.ipnum }}">
+                            <a href="{% url 'index' %}">{{ foo.host }}</a>
 						</td>
-                        	<td>
-							{{ foo.server}}
+                        	<td rowspan="{{ foo.ipnum }}">
+							{{ foo.url }}
 						</td>
-                        	<td>
-							{{ foo.serstatus }}
+                        	<td rowspan="{{ foo.ipnum }}">
+							{{ foo.status }}
 						</td>
-                        	<td>
-							{{ foo.date }}
+                        	<td center rowspan="{{ foo.ipnum }}">
+							{{ foo.hostsum }}
 						</td>
-                        	<td>
-							{{ foo.decs|safe }}
-						</td>
-					</tr>
-                  {% endfor %}
-					<tr class="warning">
-						<td>
-							V2
+                        </tr>
+             {% for key,value in foo.iplist.items%}
+               <tr class="success">
+                        <td>
+							{{ key }}
 						</td>
                         <td>
-							CPU
+                            {{ value }}
 						</td>
-						<td>
-							异常
-						</td>
-						<td>
-							2017/4/7
-						</td>
-						<td>
-							主机状态异常
-						</td>
-					</tr>
-                    <tr class="warning">
-						<td>
-							V3
-						</td>
-                        <td>
-							CPU
-						</td>
-						<td>
-                            未知
-						</td>
-						<td>
-							2017/4/7
-						</td>
-						<td>
-							主机状态未知
-						</td>
-					</tr>
+                   </tr>
+                {% endfor %}
+
+                {% endfor %}
+
+
+
+
 
 
 				</tbody>

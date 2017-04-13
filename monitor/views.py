@@ -10,6 +10,8 @@ import time
 import threading
 import urllib2
 import demjson
+import codecs
+import re
 
 #递归嵌入式字典
 def list_all_dict(dict_a):
@@ -79,7 +81,7 @@ def index(request):
 #    return render(request, "index.html")
     return render_to_response("index.html",{"dicts":data1,})
 '''
-
+"""
 def index(request):
  #   try:
         list=[]
@@ -112,3 +114,41 @@ def index(request):
         return render_to_response("index.html",{'list':list})
 #    except:
 #        print "error"
+"""
+def ipinfo(url):
+    for url_json in models.json_data.objects.raw('''select id,ip_info,downtime from monitor_json_data where url='%s' ORDER BY downtime DESC LIMIT 1'''%(str(url))):
+        iplist=url_json.ip_info
+#        pattern = re.compile(r''':[0-9]*''')
+#        match = pattern.search(iplist)
+#        iplist=iplist.replace(match.group(),"")
+        list2 = list(eval(iplist))
+#        print list2
+        ipnum=len(list2)+1
+        iplist_dict={}
+        for ip in list2:
+            iplist_dict[ip]="UP"
+        return (len(list2),ipnum,iplist_dict)
+
+
+def index(request):
+    list=[]
+    for monitor_url in models.url.objects.raw('''select id,host,url from monitor_url'''):
+        for url_json in models.json_data.objects.raw('''select id,json,downtime from monitor_json_data where url='%s' ORDER BY downtime DESC LIMIT 1'''%(monitor_url.url)):
+            json_host=monitor_url.host
+            json_url=monitor_url.url
+            json_dict = demjson.decode(url_json.json)
+            json_status=json_dict["status"]
+            ipinfotub = ipinfo(json_url)
+            ipsum = ipinfotub[0]
+            htmlsum = ipinfotub[1]
+            iplist_dict = demjson.encode(ipinfo(json_url)[2])
+            print iplist_dict
+            str ='''{'host':'%s','url':'%s','status':'%s','hostsum':'共%d台','ipnum':'%s','iplist':%s}'''%(json_host,json_url,json_status,ipsum,htmlsum,iplist_dict)
+            index_dict=demjson.decode(str)
+            print index_dict
+            list.append(index_dict)
+    return render_to_response("index.html",{'list':list})
+
+def list(request,i_id):
+    print i_id
+    return render_to_response("list.html")

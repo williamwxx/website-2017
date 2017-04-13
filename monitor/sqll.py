@@ -2,8 +2,20 @@ import urllib2
 import MySQLdb
 import datetime
 import demjson
+import redis
 
 now = datetime.datetime.now().strftime("%y-%m-%d %H:%M:%S")
+def redis_con():
+    r = redis.Redis(host='192.168.30.128',port=6379,db=0)
+    a= r.keys("/prod/zdcrm/zccrm-merchant/online/*")
+    c= []
+    for k in a:
+        c.append(r.get(k))
+    return c
+
+
+
+
 try:
     conn= MySQLdb.connect(
         host='192.168.30.128',

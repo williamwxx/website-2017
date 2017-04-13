@@ -5,5 +5,5 @@ from django.contrib import admin
 
 # Register your models here.
 class UrlAdmin(admin.ModelAdmin):
-    list_display = ('host','url','key')
+    list_display = ('host','url','urlkey')
 admin.site.register(url,UrlAdmin)
