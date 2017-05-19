@@ -15,12 +15,12 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from monitor.views import index
+from monitor.views import index,ip_list
 # from django.contrib import admin
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
 #    url(r'$', index),
     url(r'^$',index,name='index'),
-    url(r'index/list/$',list,name='list'),
+    url(r'^index/list/$',ip_list,name='ip_list'),
 ]

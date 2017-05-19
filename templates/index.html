@@ -22,7 +22,7 @@
 		<div class="col-md-12 column">
 			<h3 class="text-center">
 				业务监控系统
-			</h3>
+            </h3>
 			<table class="table table-condensed table-bordered">
 				<thead>
 					<tr>
@@ -47,12 +47,16 @@
 				</thead>
 				<tbody>
                 {% for foo in list %}
-					<tr class="success">
+					<tr {% if foo.status == "UP" %}
+                        class="success"
+					    {% else %}
+                        class="danger"
+					    {% endif %}>
 						<td  rowspan="{{ foo.ipnum }}">
-                            <a href="{% url 'index' %}">{{ foo.host }}</a>
+                            <a href="/index/list?host={{ foo.id }}" target="_blank">{{ foo.host }}</a>
 						</td>
                         	<td rowspan="{{ foo.ipnum }}">
-							{{ foo.url }}
+                               <a href="http://{{ foo.url }}/health" target="_blank">{{ foo.url }}</a>
 						</td>
                         	<td rowspan="{{ foo.ipnum }}">
 							{{ foo.status }}
@@ -62,7 +66,11 @@
 						</td>
                         </tr>
              {% for key,value in foo.iplist.items%}
-               <tr class="success">
+               <tr {% if value == "UP" %}
+                        class="success"
+					    {% else %}
+                        class="danger"
+                       {% endif %} >
                         <td>
 							{{ key }}
 						</td>
