@@ -1,15 +1,10 @@
-#--coding: utf-8--
-import urllib2
-import sys
-project_branch=123
-go_pipeline_label=321
-project_commit=333
+import docker
+import logging
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
-
-project_version = '{branch}-{label}.git{commit}'.format(
-            branch = project_branch,
-            label = go_pipeline_label,
-            commit = project_commit
-        )
-
-print project_version
+logging.basicConfig(level = logging.DEBUG)
+client = docker.DockerClient(base_url='tcp://192.168.30.129:5001')
+#print client.images.get("registry:latest")
+#log.info(client.images.pull("registry:latest"))
+log.info(client.images.build())
