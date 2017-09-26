@@ -8,8 +8,11 @@ Created on 2016-09-09 上午10:12
 import os , re ,etcd , time , json , commands
 import logging
 from docker import Client
-
 from kubernetes import K8sConfig , K8sDeployment , K8sContainer,K8sVolumeMount , K8sVolume,K8sService
+from kubernetes
+
+
+
 current_dir = os.path.split(os.path.realpath(__file__))[0]
 log = logging.getLogger(__name__)
 
@@ -86,14 +89,19 @@ class Deploy():
         self.registry = self.get_env('KS_DOCKER_REGISTRY')
         self.project_status = self.get_env("KS_PROJECT_STATUS")
         self.project_name = self.get_env('KS_PROJECT_NAME')
+        self.project_group = self.get_env('KS_PROJECT_GROUP')
         self.go_pipeline_label = self.get_env("GO_PIPELINE_LABEL")
         self.project_replicas = int(self.get_env("KS_PROJECT_REPLICAS",1))
         self.project_port = int(self.get_env('KS_PROJECT_PORT', 80))
         self.docker_server = self.get_env("KS_DOCKER_SERVER")
         self.k8s_host = self.get_env('K8S_HOST')
+        self.k8s_username = self.get_env('K8S_USERNAME')
+        self.k8s_password = self.get_env('K8S_PASSWORD')
         self.container_cpu = self.get_env('KS_CONTAINER_CPU', '2')
         self.container_cpu = self.get_env('KS_CONTAINER_MEMORY', '512M')
         self.k8s_namespace = self.get_env('KS_PROJECT_GROUP',None)
+
+        self.go_environment_name = self.get_env('GO_ENVIRONMENT_NAME')
 
         self.project_branch = self.get_project_branch()
         self.project_commit  = self.get_project_commit()
@@ -163,7 +171,7 @@ class Deploy():
         if self.registry=="" or self.registry==None:return
         if image_tag_src == None:image_tag_src= self.image_tag_name
         if image_tag_dest == None:image_tag_dest= self.image_tag_name
-        self.dockerClient.login('admin',password='admin123',registry=self.registry)
+        self.dockerClient.login(self.registry_username,password=self.registry_password,registry=self.registry)
         self.dockerClient.tag(image_tag_src , repository=self.registry+"/"+self.image_name,tag=self.image_tag)
         response = self.dockerClient.push(repository=self.registry+"/"+image_tag_dest)
         if re.search("ERROR",response,re.IGNORECASE):
@@ -178,7 +186,7 @@ class Deploy():
     def  deployment_action(self):
 
 
-        cfg_cert = K8sConfig(kubeconfig=None,auth=('ks_k8s_admin','ks_k8s_pwd'), api_host=self.k8s_host)
+        cfg_cert = K8sConfig(kubeconfig=None,auth=(self.k8s_username,self.k8s_password), api_host=self.k8s_host)
         deployment = K8sDeployment(config=cfg_cert, name=self.k8s_deployment_name)
         deployment.add_label(k='project',v=self.project_name)
         if not deployment._exists():
@@ -192,7 +200,7 @@ class Deploy():
             container.add_volume_mount(K8sVolumeMount(name='{project}-log-volume'.format(project=self.k8s_deployment_name),
                                                       mount_path='/data/logs/'))
             container.add_container_resources_limits(cpu='2', memory='1024Mi')
-	    #container.add_container_resources_requests(cpu='200m',memory='512M')
+            #container.add_container_resources_requests(cpu='200m',memory='512M')
             deployment.add_container(container)
             deployment.add_change_cause('Image Version:{version}'.format(version=self.k8s_image))
             deployment.add_image_pull_secrets([{'name': 'ksszregistrykey'}])
@@ -218,7 +226,7 @@ class Deploy():
 
     def service_action(self):
         self.k8s_svc_name = self.project_name+'-'+self.project_status
-        cfg_cert = K8sConfig(kubeconfig=None,auth=('ks_k8s_admin','ks_k8s_pwd'), api_host=self.k8s_host)
+        cfg_cert = K8sConfig(kubeconfig=None,auth=(self.k8s_username,self.k8s_password), api_host=self.k8s_host)
         service = K8sService(config=cfg_cert, name=self.k8s_svc_name)
         if not service._exists():
             service.add_selector(selector={"name": self.k8s_deployment_name})
@@ -226,7 +234,6 @@ class Deploy():
             service.add_port(name=self.k8s_svc_name, port=self.project_port, target_port=self.project_port, protocol='TCP')
             service.create()
         else:
-
             service.add_selector(selector={"name": self.k8s_deployment_name})
             service.type = 'NodePort'
             if not service._exists_port(self.project_port):
@@ -234,13 +241,58 @@ class Deploy():
                 service.add_port(name=self.k8s_svc_name, port=self.project_port, target_port=self.project_port, protocol='TCP')
             service.update()
 
-class PushToProd(Deploy):
+
+def deployment_action(self):
+    cfg_cert = K8sConfig(kubeconfig=None, auth=(self.k8s_username, self.k8s_password), api_host=self.k8s_host)
+    deployment = K8sDeployment(config=cfg_cert, name=self.k8s_deployment_name)
+    deployment.add_label(k='project', v=self.project_name)
+    if not deployment._exists():
+        container = K8sContainer(name=self.k8s_deployment_name, image=self.k8s_image)
+        container.add_env('KS_PROJECT_VERSION', self.project_version)
+        # container.add_image_pull_policy(policy='Always')
+        container.add_volume_mount(
+            K8sVolumeMount(name="{project}-resources-volume".format(project=self.k8s_deployment_name),
+                           mount_path="/data/{project}/resources".format(
+                               project=self.project_name)))
+        # container.add_volume_mount(K8sVolumeMount(name='localtime-volumn',mount_path='/etc/localtime'))
+        container.add_volume_mount(K8sVolumeMount(name='{project}-log-volume'.format(project=self.k8s_deployment_name),
+                                                  mount_path='/data/logs/'))
+        container.add_container_resources_limits(cpu='2', memory='1024Mi')
+        # container.add_container_resources_requests(cpu='200m',memory='512M')
+        deployment.add_container(container)
+        deployment.add_change_cause('Image Version:{version}'.format(version=self.k8s_image))
+        deployment.add_image_pull_secrets([{'name': 'ksszregistrykey'}])
+
+        vol = K8sVolume(name="{project}-resources-volume".format(project=self.k8s_deployment_name), type='hostPath')
+        vol.path = "/data/docker/resources/{env}/{project}".format(env=self.project_status, project=self.project_name)
+        deployment.add_volume(vol)
+
+        # vol_localtime = K8sVolume(name='localtime-volumn', type='hostPath')
+        # vol_localtime.path = "/etc/localtime"
+        # deployment.add_volume(vol_localtime)
+
+        vol_log = K8sVolume(name="{project}-log-volume".format(project=self.k8s_deployment_name), type='hostPath')
+        vol_log.path = "/data/docker/logs/{env}/{project}".format(env=self.project_status, project=self.project_name)
+        deployment.add_volume(vol_log)
+        deployment.create()
+    else:
+        deployment.change_container_resources_limits(cpu='2', memory='1024Mi')
+        deployment.set_container_image(name=self.k8s_deployment_name, image=self.k8s_image)
+        deployment.add_change_cause('Image Version:{version}'.format(version=self.k8s_image))
+        deployment.update()
+    deployment.scale(self.project_replicas)
+
+class DeployToProd(Deploy):
     def __init__(self):
         #super(PushToProd,self).__init__()
         Deploy.__init__(self)
         self.prod_registry = self.get_env('KS_PROD_DOCKER_REGISTRY')
         self.prod_registry_username = self.get_env("KS_PROD_DOCKER_REGISTRY_USERNAME")
         self.prod_registry_password = self.get_env("KS_PROD_DOCKER_REGISTRY_PASSWORD")
+
+        self.k8s_host = self.get_env('K8S_PROD_HOST')
+        self.k8s_username = self.get_env('K8S_PROD_USERNAME')
+        self.k8s_password = self.get_env('K8S_PROD_PASSWORD')
 
     def push_to_prod(self):
         image_tag_src= self.image_tag_name
@@ -259,6 +311,51 @@ class PushToProd(Deploy):
         else:
             log.info(response)
 
+    def deployment_action(self):
+        cfg_cert = K8sConfig(kubeconfig=None, auth=(self.k8s_username, self.k8s_password), api_host=self.k8s_host)
+        deployment = K8sDeployment(config=cfg_cert, name=self.k8s_deployment_name)
+        deployment.add_label(k='project', v=self.project_name)
+        if not deployment._exists():
+            container = K8sContainer(name=self.k8s_deployment_name, image=self.k8s_image)
+            container.add_env('KS_PROJECT_VERSION', self.project_version)
+            container.add_container_resources_limits(cpu='2', memory='1024Mi')
+            # container.add_image_pull_policy(policy='Always')
+
+            if re.search("(JAVA|RPC)",self.go_environment_name,re.I):
+                container.add_volume_mount(
+                    K8sVolumeMount(name="{project}-resources-volume".format(project=self.k8s_deployment_name),
+                                   mount_path="/data/{project}/resources".format(
+                                       project=self.project_name)))
+                container.add_volume_mount(K8sVolumeMount(name='{project}-log-volume'.format(project=self.k8s_deployment_name),
+                                                          mount_path='/data/logs/'))
+
+                vol = K8sVolume(name="{project}-resources-volume".format(project=self.k8s_deployment_name),
+                                type='hostPath')
+                vol.path = "/data/resources/{group}/{project}".format(group=self.project_group,
+                                                                           project=self.project_name)
+                deployment.add_volume(vol)
+
+                vol_log = K8sVolume(name="{project}-log-volume".format(project=self.k8s_deployment_name),
+                                    type='hostPath')
+                vol_log.path = "/data/logs/{group}/{project}".format(group=self.project_group,
+                                                                          project=self.project_name)
+                deployment.add_volume(vol_log)
+
+            deployment.add_container(container)
+            deployment.add_change_cause('Image Version:{version}'.format(version=self.k8s_image))
+            deployment.add_image_pull_secrets([{'name': 'prodregistrykey'}])
+
+            deployment.create()
+        else:
+            deployment.change_container_resources_limits(cpu='2', memory='1024Mi')
+            deployment.set_container_image(name=self.k8s_deployment_name, image=self.k8s_image)
+            deployment.add_change_cause('Image Version:{version}'.format(version=self.k8s_image))
+            deployment.update()
+        deployment.scale(self.project_replicas)
+
+
+
+
 def main():
     myDeploy = Deploy()
     import argparse
@@ -270,12 +367,22 @@ def main():
     action_deploy = subparser.add_parser("deploy", help="create or update kubernetes deployment")
     action_deploy = subparser.add_parser("svc", help="create or update kubernetes service")
     action_deploy = subparser.add_parser("push2prod", help="push image to prod registry")
+    action_deploy = subparser.add_parser("deploy2prod", help="deploy container to prod ")
     args = parser.parse_args()
     log.info(str(args))
     action = args.action
 
     if action == 'build':
         myDeploy.build()
+
+
+
+
+
+
+
+
+
     elif action == 'push':
         myDeploy.push()
     elif action == 'deploy':
@@ -283,10 +390,12 @@ def main():
     elif action == 'svc':
         myDeploy.service_action()
     elif action == 'push2prod':
-        myPush = PushToProd()
-        myPush.push_to_prod()
+        myProd = DeployToProdDeployToProd()
+        myProd.push_to_prod()
+    elif action == 'deploy2prod':
+        myProd = DeployToProd()
+        myProd.deployment_action()
 
 if __name__=="__main__":
     logging.basicConfig(level = logging.DEBUG)
     main()
-
